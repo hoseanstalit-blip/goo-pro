@@ -1,0 +1,35 @@
+name: Build & Sign Goo Pro APKs
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+      - name: Setup Keystore
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > goo_pro_key.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Build user app
+        working-directory: user_app
+        run: |
+          flutter pub get
+          flutter build appbundle --release
+      - name: Build driver app
+        working-directory: driver_app
+        run: |
+          flutter pub get
+          flutter build appbundle --release
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: goo-pro-bundles
+          path: |
+            user_app/build/app/outputs/bundle/release/app-release.aab
+            driver_app/build/app/outputs/bundle/release/app-release.aab
